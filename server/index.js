@@ -20,5 +20,5 @@ app.get("/",(req,res)=>{
     res.send("dlroW yM oT emocleW")
 })
 app.listen(8000, () => {
-    console.log(`Port is Running At ${process.env.REACT_APP_API_KEY_BACKEND_URL}`)
+    console.log(`Port is Running At http://localhost:8000`)
 })

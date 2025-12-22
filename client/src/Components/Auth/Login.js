@@ -31,7 +31,6 @@ export default function Login() {
         })
 
         let data = await Response.json();
-        console.log(data);
         if (data.status === 'ok') {
             setLoading(false);
             if (checked) localStorage.setItem('token', data.token);

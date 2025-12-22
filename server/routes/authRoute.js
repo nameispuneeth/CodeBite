@@ -31,7 +31,6 @@ router.post('/login', async (req, res) => {
                     name: user.name,
                     email: user.email
                 }, secretcode);
-                console.log(token)
                 res.json({ status: 'ok', token });
             }
             else {
