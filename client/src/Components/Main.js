@@ -233,7 +233,7 @@ export default function PlayGround() {
         else if (stored && stored !== "undefined") {
             const data = JSON.parse(stored);
 
-            const Response = await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/updateCode`, {
+            const Response = await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/user/updateCode`, {
                 method: "POST",
                 headers: {
                     'authorization': token,
@@ -283,7 +283,6 @@ export default function PlayGround() {
                   `
                 },
                 showCancelButton: true,
-                cancelButtonText: 'Save As Main',
                 allowOutsideClick: false,
                 allowEscapeKey: false,
                 background: `${DarkMode ? '#1e1e1e' : 'white'}`,
@@ -302,7 +301,7 @@ export default function PlayGround() {
             }
 
             const nameToSave = isConfirmed && newName.trim() !== "" ? newName : codename;
-            const Response = await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/pushCode`, {
+            const Response = await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/user/pushCode`, {
                 method: "POST",
                 headers: {
                     'authorization': token,
@@ -361,7 +360,7 @@ export default function PlayGround() {
 
     let getAiData = async (prompt) => {
         setAiLoading(true);
-        const Response = await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/AiData`, {
+        const Response = await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/user/AiData`, {
             method: "POST",
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

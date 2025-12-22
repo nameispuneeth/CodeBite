@@ -20,7 +20,7 @@ export default function Login() {
     let HandleSubmission = async (e) => {
         e.preventDefault();
         setLoading(true);
-        let Response = await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/login`, {
+        let Response = await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/auth/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -31,7 +31,7 @@ export default function Login() {
         })
 
         let data = await Response.json();
-
+        console.log(data);
         if (data.status === 'ok') {
             setLoading(false);
             if (checked) localStorage.setItem('token', data.token);
@@ -60,7 +60,7 @@ export default function Login() {
             setLoading(false);
             return;
         }
-        const req = await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/sendmailforpwdchange`, {
+        const req = await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/auth/sendmailforpwdchange`, {
             method: "POST",
             headers: {
                 'Content-Type': 'application/json'

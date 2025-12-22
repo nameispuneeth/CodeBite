@@ -31,7 +31,7 @@ export default function OtpPage() {
   };
   let registerUser=async ()=>{
     const authtoken=sessionStorage.getItem("token");
-    const result = await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/registerUser`, {
+    const result = await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/auth/registerUser`, {
       method: "GET",
       headers: {
         'authorization': authtoken,
@@ -69,7 +69,7 @@ export default function OtpPage() {
       navigate("/login");
       return;
     }
-    const response=await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/verifyotp`,{
+    const response=await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/auth/verifyotp`,{
       method:"POST",
       headers:{
         'authorization':authtoken,
@@ -94,7 +94,7 @@ export default function OtpPage() {
     const token = sessionStorage.getItem("token");
 
     if (pwd1 === pwd2 && token) {
-      const response = await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/changePWD`, {
+      const response = await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/auth/changepwd`, {
         method: 'POST',
         headers: {
           'authorization': token,

@@ -17,7 +17,7 @@ export default function Register() {
         setInvalid(false);
         setLoading(true);
         e.preventDefault();
-        let Response = await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/register`, {
+        let Response = await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/auth/register`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

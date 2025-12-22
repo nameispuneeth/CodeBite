@@ -11,19 +11,19 @@ export default function UserHome() {
     const [loading, setLoading] = useState(true);
     const userExists=useRef(false);
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
 useEffect(() => {
     const getUserCodes = async () => {
       const token = localStorage.getItem("token") || sessionStorage.getItem("token");
       if (token) {
         try {
-          const response = await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/getUserData`, {
-            method: "GET",
+          const response = await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/user/getUserData`, {
+            method: "POST",
             headers: {
-              authorization: token,
-              "content-type": "application/json",
+              "authorization": token,
+              "Content-Type": "application/json",
             },
           });
+
           const data = await response.json();
           if (data.status === "ok") {
             userExists.current = true;
@@ -105,16 +105,15 @@ useEffect(() => {
           });
           if(newName && newName.trim()!==""){
             const token=localStorage.getItem("token") || sessionStorage.getItem("token");
-            const response=await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/changeUserName`,{
+            const response=await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/user/changeUserName`,{
                 method:"POST",
                 headers:{
                     'authorization':token,
                     'Content-Type':'application/json'
                 },
-                body:JSON.stringify({Name:newName})
+                body:JSON.stringify({newname:newName})
             })
             const data=await response.json();
-
             if(data.status==="ok"){
                 localStorage.getItem("token")?localStorage.setItem("token",data.token):sessionStorage.setItem("token",data.token)
                 setUserName(newName);
@@ -124,8 +123,7 @@ useEffect(() => {
                     icon:'success',
                     text:"Name Changed SuccessFully",
                     timer:3000,
-                                showCancelButton: true,
-
+                    showCancelButton: true,
                     background: `${DarkMode ? '#1e1e1e' : 'white'}`,
       confirmButtonColor: `${DarkMode ? '#1d4ed8' : 'black'}`
                 })
