@@ -17,7 +17,7 @@ useEffect(() => {
       const token = localStorage.getItem("token") || sessionStorage.getItem("token");
       if (token) {
         try {
-          const response = await fetch("http://localhost:8000/api/getUserData", {
+          const response = await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/getUserData`, {
             method: "GET",
             headers: {
               authorization: token,
@@ -105,7 +105,7 @@ useEffect(() => {
           });
           if(newName && newName.trim()!==""){
             const token=localStorage.getItem("token") || sessionStorage.getItem("token");
-            const response=await fetch("http://localhost:8000/api/changeUserName",{
+            const response=await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/changeUserName`,{
                 method:"POST",
                 headers:{
                     'authorization':token,

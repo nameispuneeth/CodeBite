@@ -39,7 +39,7 @@ export default function Card({data,handleDelete}) {
         if(token){
             setchangeName(false);
             
-            let Response=await fetch("http://localhost:8000/api/updateTitle",{
+            let Response=await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/updateTitle`,{
                 method:"POST",
                 headers:{
                     "authorization":token,
@@ -74,7 +74,7 @@ export default function Card({data,handleDelete}) {
         sessionStorage.removeItem("code");
         const token=localStorage.getItem("token")||sessionStorage.getItem("token");
         if(token){
-            let Response=await fetch("http://localhost:8000/api/deleteData",{
+            let Response=await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/deleteData`,{
                 method:"POST",
                 headers:{
                     'authorization':token,

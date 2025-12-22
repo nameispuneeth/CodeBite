@@ -20,7 +20,7 @@ export default function Login() {
     let HandleSubmission = async (e) => {
         e.preventDefault();
         setLoading(true);
-        let Response = await fetch('http://localhost:8000/api/login', {
+        let Response = await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -60,7 +60,7 @@ export default function Login() {
             setLoading(false);
             return;
         }
-        const req = await fetch("http://localhost:8000/api/sendmailforpwdchange", {
+        const req = await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/sendmailforpwdchange`, {
             method: "POST",
             headers: {
                 'Content-Type': 'application/json'

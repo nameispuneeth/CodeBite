@@ -233,7 +233,7 @@ export default function PlayGround() {
         else if (stored && stored !== "undefined") {
             const data = JSON.parse(stored);
 
-            const Response = await fetch("http://localhost:8000/api/updateCode", {
+            const Response = await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/updateCode`, {
                 method: "POST",
                 headers: {
                     'authorization': token,
@@ -302,7 +302,7 @@ export default function PlayGround() {
             }
 
             const nameToSave = isConfirmed && newName.trim() !== "" ? newName : codename;
-            const Response = await fetch("http://localhost:8000/api/pushCode", {
+            const Response = await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/pushCode`, {
                 method: "POST",
                 headers: {
                     'authorization': token,
@@ -361,7 +361,7 @@ export default function PlayGround() {
 
     let getAiData = async (prompt) => {
         setAiLoading(true);
-        const Response = await fetch("http://localhost:8000/api/AiData", {
+        const Response = await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/AiData`, {
             method: "POST",
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -371,7 +371,6 @@ export default function PlayGround() {
             })
         });
         const data = await Response.json();
-        console.log(data);
         if (data.status !== "error") {
             const cleaned = data.result
                 .replace(/^```[a-zA-Z0-9]*\n/, '')

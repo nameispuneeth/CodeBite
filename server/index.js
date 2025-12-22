@@ -61,7 +61,6 @@ app.post('/api/login', async (req, res) => {
 
 app.post('/api/register', async (req, res) => {
     let data = req.body;
-    console.log(data);
     try {
         const temp = await User.findOne({ email: data.email });
         if (temp) {
@@ -80,7 +79,6 @@ app.post('/api/register', async (req, res) => {
             );
             
             const token = jwt.sign({ email: data.email,password: newPassword,name: data.name,}, secretcode ,{expiresIn:'5m'});
-            console.log(token);
             let mailOptions = {
                 from: `"Codebite IDE" <${process.env.gmail}>`,
                 to: data.email,
@@ -344,15 +342,16 @@ app.post("/api/verifyotp",async(req,res)=>{
         const userOTP=await OTPModel.findOne({email:decoded.email});
         if(!userOTP) return res.send({status:'error',error:'Server Error'})
         if(Date.now()>userOTP.expiry || !OTP || !userOTP) return res.send({status:'error',error:"OTP Expired"});
-        console.log(userOTP,OTP,userOTP.otp);
         const match=await bcrypt.compare(OTP,userOTP.otp);
-        console.log(match)
         const newtoken=jwt.sign({email:decoded.email,name:decoded.name,password:decoded.password},secretcode);
         if(!match) return res.send({status:'error',error:"Verification Failed"});
         return res.send({status:'ok',token:newtoken}) 
     }catch(e){
         res.send({status:'error',error:'Session Expired'})
     }
+})
+app.get("/",(req,res)=>{
+    console.log("emocleW oT yM dlroW ")
 })
 app.listen(8000, () => {
     console.log(`Port is Running At http://localhost:8000`)

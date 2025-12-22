@@ -31,7 +31,7 @@ export default function OtpPage() {
   };
   let registerUser=async ()=>{
     const authtoken=sessionStorage.getItem("token");
-    const result = await fetch("http://localhost:8000/api/registerUser", {
+    const result = await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/registerUser`, {
       method: "GET",
       headers: {
         'authorization': authtoken,
@@ -69,7 +69,7 @@ export default function OtpPage() {
       navigate("/login");
       return;
     }
-    const response=await fetch("http://localhost:8000/api/verifyotp",{
+    const response=await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/verifyotp`,{
       method:"POST",
       headers:{
         'authorization':authtoken,
@@ -80,7 +80,6 @@ export default function OtpPage() {
       })
     })
     const data=await response.json();
-    console.log(data);
     if (data.status=="ok") {
       sessionStorage.setItem("token",data.token);
       if (purpose === "changepwd") {
@@ -93,10 +92,9 @@ export default function OtpPage() {
   };
   const ChangePWD = async () => {
     const token = sessionStorage.getItem("token");
-    console.log(pwd1,pwd2,token);
 
     if (pwd1 === pwd2 && token) {
-      const response = await fetch("http://localhost:8000/api/changePWD", {
+      const response = await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/changePWD`, {
         method: 'POST',
         headers: {
           'authorization': token,
