@@ -20,7 +20,7 @@ export default function Login() {
     let HandleSubmission = async (e) => {
         e.preventDefault();
         setLoading(true);
-        let Response = await fetch('https://codebite.onrender.com/api/login', {
+        let Response = await fetch('http://localhost:8000/api/login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -57,9 +57,10 @@ export default function Login() {
         setLoading(true);
         if (!emailInput.checkValidity()) {
             emailInput.reportValidity();
+            setLoading(false);
             return;
         }
-        const req = await fetch("https://codebite.onrender.com/api/emailExists", {
+        const req = await fetch("http://localhost:8000/api/sendmailforpwdchange", {
             method: "POST",
             headers: {
                 'Content-Type': 'application/json'
@@ -73,8 +74,7 @@ export default function Login() {
 
         if (res.status === "ok") {
             setLoading(false);
-            sessionStorage.setItem('token', res.token);
-            Cookies.set("OTP", res.OTP, { expires: 20 / (24 * 60) });
+            sessionStorage.setItem("authToken",res.authToken);
             navigate("/verify-otp", { state: { purpose: "changepwd" } });
         }
         else {

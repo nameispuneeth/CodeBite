@@ -2,7 +2,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import "../../index.css";
 import { ThemeContext } from "../../contexts/ThemeContext";
 import { useContext, useRef, useState } from "react";
-import Cookies from 'js-cookie'
 import Swal from "sweetalert2";
 
 export default function OtpPage() {
@@ -30,48 +29,74 @@ export default function OtpPage() {
       }
     }
   };
+  let registerUser=async ()=>{
+    const authtoken=sessionStorage.getItem("token");
+    const result = await fetch("http://localhost:8000/api/registerUser", {
+      method: "GET",
+      headers: {
+        'authorization': authtoken,
+        'Content-Type': 'application/json'
+      }
+    })
+    const data = await result.json();
+    if (data.status === 'ok') {
+      Swal.fire({
+        title: "Sign Up Successful!",
+        text: "You have successfully created your account.",
+        icon: "success",
+        confirmButtonText: "Continue",
+        background: `${DarkMode ? '#1e1e1e' : 'white'}`,
+        confirmButtonColor: `${DarkMode ? '#1d4ed8' : 'black'}`
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate("/login")
+        }
+      });
+    } else {
+      alert(data.error);
+    }
 
+  }
   let VerifyOTP = async () => {
     let currOTP = value.join("");
-    const OTP = Cookies.get("OTP");
-
-    if (currOTP === OTP) {
+    const authtoken=sessionStorage.getItem("authToken");
+    if(!authtoken){
+      Swal.fire({
+        title:"Session Expired",
+        icon:"error",
+        background: `${DarkMode ? '#1e1e1e' : 'white'}`,
+      });
+      navigate("/login");
+      return;
+    }
+    const response=await fetch("http://localhost:8000/api/verifyotp",{
+      method:"POST",
+      headers:{
+        'authorization':authtoken,
+        'Content-Type':'application/json'
+      },
+      body:JSON.stringify({
+        otp:currOTP
+      })
+    })
+    const data=await response.json();
+    console.log(data);
+    if (data.status=="ok") {
+      sessionStorage.setItem("token",data.token);
       if (purpose === "changepwd") {
         setShowPwdChange(true);
       } else {
-        const Token = Cookies.get("Token");
-        const result = await fetch("https://codebite.onrender.com/api/registerUser", {
-          method: "GET",
-          headers: {
-            'authorization': Token,
-            'Content-Type': 'application/json'
-          }
-        })
-        const data = await result.json();
-        if (data.status === 'ok') {
-          Swal.fire({
-            title: "Sign Up Successful!",
-            text: "You have successfully created your account.",
-            icon: "success",
-            confirmButtonText: "Continue",
-            background: `${DarkMode ? '#1e1e1e' : 'white'}`,
-            confirmButtonColor: `${DarkMode ? '#1d4ed8' : 'black'}`
-          }).then((result) => {
-            if (result.isConfirmed) {
-              navigate("/login")
-            }
-          });
-        } else {
-          alert(data.error);
-        }
+        registerUser();
       }
     }
-    else alert("Wrong OTP");
+    else alert(data.error);
   };
   const ChangePWD = async () => {
     const token = sessionStorage.getItem("token");
+    console.log(pwd1,pwd2,token);
+
     if (pwd1 === pwd2 && token) {
-      const response = await fetch("https://codebite.onrender.com/api/changePWD", {
+      const response = await fetch("http://localhost:8000/api/changePWD", {
         method: 'POST',
         headers: {
           'authorization': token,
@@ -91,7 +116,6 @@ export default function OtpPage() {
       }
     }
     else setpwderror(true);
-
   }
   const pwdChangeHTML = () => {
     return (

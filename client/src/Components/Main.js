@@ -1,7 +1,7 @@
 import { useContext, useRef, useState, useEffect } from "react";
 import { ThemeContext } from "../contexts/ThemeContext";
 import PlayGroundHeader from "./PlayGroundHeader";
-import { Sun, Moon, Save, WandSparkles,PlusCircle } from 'lucide-react';
+import { Sun, Moon, Save, WandSparkles, PlusCircle } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import "../App.css";
 import Swal from 'sweetalert2';
@@ -67,7 +67,7 @@ export default function PlayGround() {
     const DarkMode = theme === 'dark';
     const [Ind, setInd] = useState(2);
     const [Code, setCode] = useState("");
-    const [codename,setcodename] = useState("main");
+    const [codename, setcodename] = useState("main");
 
     const [AiLoading, setAiLoading] = useState(false);
     const [SaveLoad, setSaveLoad] = useState(false);
@@ -233,7 +233,7 @@ export default function PlayGround() {
         else if (stored && stored !== "undefined") {
             const data = JSON.parse(stored);
 
-            const Response = await fetch("https://codebite.onrender.com/api/updateCode", {
+            const Response = await fetch("http://localhost:8000/api/updateCode", {
                 method: "POST",
                 headers: {
                     'authorization': token,
@@ -276,7 +276,7 @@ export default function PlayGround() {
                 input: 'text',
                 inputPlaceholder: 'Your file name here',
                 inputAttributes: {
-                  style: `
+                    style: `
                     background:${DarkMode ? '#1e1e1e' : 'white'};
                     color:${DarkMode ? 'white' : 'black'};
                     border:1px solid ${DarkMode ? '#444' : '#ccc'};
@@ -290,19 +290,19 @@ export default function PlayGround() {
                 color: `${DarkMode ? 'white' : 'black'}`,
                 confirmButtonColor: `${DarkMode ? '#1d4ed8' : 'black'}`,
                 preConfirm: () => {
-                  if (Swal.getInput().value.trim() === "") {
-                    Swal.showValidationMessage("Code Name Cant Be Empty");
-                    return false;
-                  }
+                    if (Swal.getInput().value.trim() === "") {
+                        Swal.showValidationMessage("Code Name Cant Be Empty");
+                        return false;
+                    }
                 }
-              });
-            
-              if (isConfirmed && newName.trim() !== "") {
+            });
+
+            if (isConfirmed && newName.trim() !== "") {
                 setcodename(newName);
-              }
-            
+            }
+
             const nameToSave = isConfirmed && newName.trim() !== "" ? newName : codename;
-            const Response = await fetch("https://codebite.onrender.com/api/pushCode", {
+            const Response = await fetch("http://localhost:8000/api/pushCode", {
                 method: "POST",
                 headers: {
                     'authorization': token,
@@ -361,7 +361,7 @@ export default function PlayGround() {
 
     let getAiData = async (prompt) => {
         setAiLoading(true);
-        const Response = await fetch("https://codebite.onrender.com/api/AiData", {
+        const Response = await fetch("http://localhost:8000/api/AiData", {
             method: "POST",
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -371,6 +371,7 @@ export default function PlayGround() {
             })
         });
         const data = await Response.json();
+        console.log(data);
         if (data.status !== "error") {
             const cleaned = data.result
                 .replace(/^```[a-zA-Z0-9]*\n/, '')
@@ -416,10 +417,10 @@ export default function PlayGround() {
 
 
     }
-    const NewPage=async()=>{
-        const token=localStorage.getItem("token") || sessionStorage.getItem("token");
-        const codeToken=localStorage.getItem("code") || sessionStorage.getItem("code");
-        if(token && codeToken && codeToken.code!==Code){
+    const NewPage = async () => {
+        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+        const codeToken = localStorage.getItem("code") || sessionStorage.getItem("code");
+        if (token && codeToken && codeToken.code !== Code) {
             const result = await Swal.fire({
                 title: `<span style="color:${DarkMode ? 'white' : 'black'}">Unsaved Changes</span>`,
                 text: "You have unsaved changes. Would you like to save them before leaving?",
@@ -433,18 +434,18 @@ export default function PlayGround() {
                 cancelButtonColor: `${DarkMode ? '#6b7280' : '#888'}`,
                 reverseButtons: true,
                 customClass: {
-                  popup: 'swal-custom-popup'
+                    popup: 'swal-custom-popup'
                 }
-              });
-            
-              if (result.isConfirmed) {
+            });
+
+            if (result.isConfirmed) {
                 await SaveCode();
-              }
+            }
         }
         sessionStorage.removeItem("code");
         setcodename("main");
         setCode(Languages[Ind].code)
-        
+
     }
     return (
         <div className={`h-screen flex flex-col overflow-hidden ${DarkMode ? 'bg-gray-900 text-white' : 'bg-white text-black'}`}>
@@ -457,7 +458,7 @@ export default function PlayGround() {
                         <div className={`absolute left-2 p-3 border-r-2 ${DarkMode ? 'text-white border-white' : 'text-gray-700 border-black'} hidden md:block`}>
                             {codename}.{Languages[Ind].extension}
                         </div>
-                        <button className="mr-2 border-2 border-gray-500 p-1" onClick={()=>NewPage()}>
+                        <button className="mr-2 border-2 border-gray-500 p-1 hidden md:block" onClick={() => NewPage()}>
                             <PlusCircle color={DarkMode ? "#ffffff" : "#000000"} />
                         </button>
                         <button className="mr-2 border-2 border-gray-500 p-1" onClick={() => AiAlert()}>
@@ -522,19 +523,23 @@ export default function PlayGround() {
                     </header>
 
                     {/* Editor */}
-                    <div className="w-full flex flex-1 bg-vscode justify-center items-center">
-                        {AiLoading ? <Spinner /> :
-                            <Editor
-                                key={Ind}
-                                height="100%"
-                                width="100%"
-                                language={Languages[Ind].lang}
-                                options={editorOptions}
-                                value={Code}
-                                onChange={(val) => setCode(val)}
-                                theme={DarkMode ? 'vs-dark' : 'vs-light'}
-                            />
-                        }
+                    <div className="w-full relative flex flex-1 bg-vscode justify-center items-center">
+                        <Editor
+                            key={Ind}
+                            height="100%"
+                            width="100%"
+                            language={Languages[Ind].lang}
+                            options={editorOptions}
+                            value={Code}
+                            onChange={(val) => setCode(val)}
+                            theme={DarkMode ? 'vs-dark' : 'vs-light'}
+                        />
+                        {AiLoading && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-10">
+                                <Spinner />
+                            </div>
+                        )}
+
                     </div>
                 </div>
 

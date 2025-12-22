@@ -2,7 +2,6 @@ import { useContext, useState, useRef } from "react";
 import { ThemeContext } from "../../contexts/ThemeContext";
 import { CircleAlert } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
-import Cookies from 'js-cookie'
 
 export default function Register() {
     const navigate = useNavigate();
@@ -18,7 +17,7 @@ export default function Register() {
         setInvalid(false);
         setLoading(true);
         e.preventDefault();
-        let Response = await fetch('https://codebite.onrender.com/api/register', {
+        let Response = await fetch('http://localhost:8000/api/register', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -32,8 +31,7 @@ export default function Register() {
 
         if (data.status === 'ok') {
             setLoading(false);
-            Cookies.set("Token", data.token, { expires: 20 / (24 * 60) });
-            Cookies.set("OTP", data.OTP, { expires: 20 / (24 * 60) });
+            sessionStorage.setItem("authToken",data.authToken);
             navigate('/verify-otp', { state: { purpose: "register" } });
 
         } else {

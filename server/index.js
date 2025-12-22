@@ -9,14 +9,15 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const { ObjectId } = require("mongoose").Types;
+const OTPModel = require("./models/otp.model")
 
 app.use(cors());
 app.use(express.json())
-const mongoLink=process.env.mongoDbLink;
-mongoose.connect(mongoLink) .then(() => console.log("✅ MongoDB Atlas Connected"))
-  .catch(err => console.error("❌ Connection error:", err));
+const mongoLink = process.env.mongoDbLink;
+mongoose.connect(mongoLink).then(() => console.log("✅ MongoDB Atlas Connected"))
+    .catch(err => console.error("❌ Connection error:", err));
 const genAi = new GoogleGenerativeAI(process.env.apiKey);
-const model = genAi.getGenerativeModel({ model: 'gemini-2.0-flash' });
+const model = genAi.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
 let transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
@@ -60,19 +61,26 @@ app.post('/api/login', async (req, res) => {
 
 app.post('/api/register', async (req, res) => {
     let data = req.body;
+    console.log(data);
     try {
         const temp = await User.findOne({ email: data.email });
         if (temp) {
             res.json({ status: 'error', error: 'Email In Use' });
         } else {
             const newPassword = await bcrypt.hash(data.pwd, 10);
-            const token = jwt.sign({
-                name: data.name,
-                email: data.email,
-                password: newPassword
-            }, secretcode);
             const OTP = Math.floor(100000 + Math.random() * 900000);
-
+            const hashedOTP = await bcrypt.hash(OTP.toString(), 10);
+            const abc=await OTPModel.findOneAndUpdate(
+                { email: data.email },
+                {
+                    otp: hashedOTP,
+                    expiry: new Date(Date.now() + 1000 * 60 * 5)
+                },
+                { upsert: true, new: true }
+            );
+            
+            const token = jwt.sign({ email: data.email,password: newPassword,name: data.name,}, secretcode ,{expiresIn:'5m'});
+            console.log(token);
             let mailOptions = {
                 from: `"Codebite IDE" <${process.env.gmail}>`,
                 to: data.email,
@@ -88,13 +96,11 @@ app.post('/api/register', async (req, res) => {
   `
             };
 
-            transporter.sendMail(mailOptions, function (error, info) {
+            transporter.sendMail(mailOptions, async (error, info) => {
                 if (error) {
-                    console.log(error);
                     res.send({ status: 'error', error: 'NETWORK ISSUES' })
                 } else {
-                    console.log(info);
-                    res.send({ status: 'ok', OTP: OTP, token: token });
+                    res.send({ status: 'ok', authToken: token });
                 }
             });
 
@@ -217,11 +223,24 @@ app.post("/api/deleteData", async (req, res) => {
 })
 
 app.post('/api/AiData', async (req, res) => {
+    
     try {
-        const result = await model.generateContent("For This Prompt : " + req.body.Prompt + "\t In " + req.body.Language + "\t With This Code" + req.body.Code + "Just Give Me The Code Only");
-        const aiResponse =
-            result.response.candidates?.[0]?.content?.parts?.[0]?.text || "No output";
+        const prompt = `
+You are a senior ${req.body.Language} developer.
 
+TASK:
+${req.body.Prompt}
+
+CODE:
+${req.body.Code}
+
+RULES:
+- Return ONLY code
+- No markdown
+- No explanation
+`;
+        const result = await model.generateContent(prompt);
+        const aiResponse = result.response.candidates?.[0]?.content?.parts?.[0]?.text || "No output";
         res.send({ status: "ok", result: aiResponse });
     }
     catch {
@@ -229,17 +248,21 @@ app.post('/api/AiData', async (req, res) => {
     }
 })
 
-app.post("/api/emailExists", async (req, res) => {
+app.post("/api/sendmailforpwdchange", async (req, res) => {
     const data = req.body;
     const result = await User.findOne({ email: data.email });
-
     if (result) {
-        const token = jwt.sign({
-            name: result.name,
-            email: result.email
-        }, secretcode);
-
         const OTP = Math.floor(100000 + Math.random() * 900000);
+        const hashedOTP = await bcrypt.hash(OTP.toString(), 10);
+        await OTPModel.findOneAndUpdate(
+            { email: data.email },
+            {
+                otp: hashedOTP,
+                expiry: Date.now() + (1000 * 60 * 5)
+            }, {
+            upsert: true
+        });
+        const token = jwt.sign({ email: data.email }, secretcode,{expiresIn:'5m'});
 
         let mailOptions = {
             from: `"Codebite IDE" <${process.env.gmail}>`,
@@ -256,16 +279,14 @@ app.post("/api/emailExists", async (req, res) => {
   `
         };
 
-        transporter.sendMail(mailOptions, function (error, info) {
+        transporter.sendMail(mailOptions, async (error, info) => {
             if (error) {
-                console.log(error);
                 res.send({ status: 'error', error: 'NETWORK ISSUES' })
             } else {
-                res.send({ status: 'ok', OTP: OTP, token: token });
+                res.send({ status: 'ok', authToken: token });
+
             }
         });
-
-
     }
     else res.send({ status: 'error', error: 'No Email Exists' });
 })
@@ -298,19 +319,39 @@ app.get("/api/registerUser", async (req, res) => {
     }
 })
 
-app.post("/api/changeUserName",async (req,res)=>{
-    const token=req.headers["authorization"];
-    try{
+app.post("/api/changeUserName", async (req, res) => {
+    const token = req.headers["authorization"];
+    try {
         const data = jwt.verify(token, secretcode);
-        const updation=await User.updateOne({ email: data.email }, { $set: { name: req.body.Name } });
+        const updation = await User.updateOne({ email: data.email }, { $set: { name: req.body.Name } });
         const newToken = jwt.sign({
-                name: req.body.Name,
-                email: data.email,
-            }, secretcode);
-        res.send({status:'ok',token:newToken})
-        
-    }catch{
-        res.send({ status: 'error', error: 'Network Issues' }) 
+            name: req.body.Name,
+            email: data.email,
+        }, secretcode);
+        res.send({ status: 'ok', token: newToken })
+
+    } catch {
+        res.send({ status: 'error', error: 'Network Issues' })
+    }
+});
+
+app.post("/api/verifyotp",async(req,res)=>{
+    const token=req.headers.authorization;
+    const OTP=req.body.otp.toString();
+    
+    try{
+        const decoded=jwt.verify(token,secretcode);
+        const userOTP=await OTPModel.findOne({email:decoded.email});
+        if(!userOTP) return res.send({status:'error',error:'Server Error'})
+        if(Date.now()>userOTP.expiry || !OTP || !userOTP) return res.send({status:'error',error:"OTP Expired"});
+        console.log(userOTP,OTP,userOTP.otp);
+        const match=await bcrypt.compare(OTP,userOTP.otp);
+        console.log(match)
+        const newtoken=jwt.sign({email:decoded.email,name:decoded.name,password:decoded.password},secretcode);
+        if(!match) return res.send({status:'error',error:"Verification Failed"});
+        return res.send({status:'ok',token:newtoken}) 
+    }catch(e){
+        res.send({status:'error',error:'Session Expired'})
     }
 })
 app.listen(8000, () => {
