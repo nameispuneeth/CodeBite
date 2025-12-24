@@ -2,12 +2,11 @@ import { useContext, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ThemeContext } from "../../contexts/ThemeContext";
 import { CircleAlert } from 'lucide-react';
-import Cookies from 'js-cookie'
+import {useGoogleLogin} from '@react-oauth/google'
 
 
 export default function Login() {
     const [loading, setLoading] = useState(false);
-
     const navigate = useNavigate();
     const { theme } = useContext(ThemeContext);
     const DarkMode = theme === 'dark';
@@ -17,8 +16,34 @@ export default function Login() {
     const [Invalid, setInvalid] = useState(false);
     const [checked, setChecked] = useState(false);
 
-    let HandleSubmission = async (e) => {
-        e.preventDefault();
+    const responseFromGoogle=async(authRes)=>{
+        try{
+          setLoading(true);
+          if(authRes.code){
+            const encodedCode = encodeURIComponent(authRes.code);
+            const response=await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/auth/google/${encodedCode}`,{
+              method:"GET"
+            });
+            const data=await response.json();
+            if(data.status==="ok"){
+              localStorage.setItem("token",data.token);
+              navigate("/");
+            }else{
+                alert(data.error);
+            }
+          }
+        }catch(e){
+          alert("Unable To Access");
+        }
+        setLoading(false);
+      }
+      const googleLogin=useGoogleLogin({
+        onSuccess:responseFromGoogle,
+        onError:responseFromGoogle,
+        flow:'auth-code',
+      })
+
+    let HandleSubmission = async () => {
         setLoading(true);
         let Response = await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/auth/login`, {
             method: 'POST',
@@ -93,7 +118,7 @@ export default function Login() {
 
 
                     <p className={`flex justify-center mb-10 font-extrabold text-5xl ${DarkMode ? 'text-blue-700' : 'text-black'}`}>LOGIN</p>
-                    <form onSubmit={HandleSubmission}>
+                    <div>
                         <input
                             type="email"
                             placeholder="Enter Your Email"
@@ -127,12 +152,13 @@ export default function Login() {
                             </div>
                         </div>
 
-                        <input type="submit" value="Login" className={`w-full p-2 border-2 cursor-pointer font-semibold mb-5 text-white ${DarkMode ? 'border-blue-700 hover:bg-blue-500 bg-blue-700 ' : 'border-black hover:bg-gray-700 bg-black'}`}></input>
+                        <button className={`w-full p-2 border-2 cursor-pointer font-semibold mb-5 text-white ${DarkMode ? 'border-blue-700 hover:bg-blue-500 bg-blue-700 ' : 'border-black hover:bg-gray-700 bg-black'}`} onClick={()=>HandleSubmission()}>Login</button>
+                        <button className={`w-full p-2 border-2 cursor-pointer font-semibold mb-5 text-white ${DarkMode ? 'border-blue-700 hover:bg-blue-500 bg-blue-700 ' : 'border-black hover:bg-gray-700 bg-black'}`} onClick={()=>googleLogin()}>Continue With Google</button>
 
                         {Invalid && ErrorMsg()}
 
                         <p className={`flex justify-center font-light text-sm ${DarkMode ? 'text-white' : 'text-black'}`}>Don't Have An Account ?  <span className={`ml-1 cursor-pointer font-semibold ${DarkMode ? 'text-blue-500' : 'text-gray-800'}`} onClick={() => navigate("/register")}> Register </span> </p>
-                    </form>
+                    </div>
                 </div>
             </div>
         </div>

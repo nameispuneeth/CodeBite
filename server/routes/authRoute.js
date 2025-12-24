@@ -7,6 +7,7 @@ const bcrypt = require('bcrypt');
 const OTPModel = require("../models/otp.model")
 const secretcode = process.env.secretCode;
 const jwt=require("jsonwebtoken")
+const {oauth2Client} = require("../utils/googleClient")
 
 
 let transporter = nodemailer.createTransport({
@@ -34,7 +35,8 @@ router.post('/login', async (req, res) => {
                 res.json({ status: 'ok', token });
             }
             else {
-                res.json({ status: 'error', error: 'Invalid Credientials' })
+                if(temp.GoogleUniqueId===null) res.json({ status: 'error', error: 'Invalid Credientials' });
+                else res.json({status:'error',error:'Email Registered with Google.Please Login with Google'});
             }
         } else {
             res.json({ status: 'error', error: 'Email Doesnt Exist' })
@@ -188,6 +190,39 @@ router.post("/verifyotp",async(req,res)=>{
         res.send({status:'error',error:'Session Expired'})
     }
 })
+
+
+
+router.get("/google/:code",async(req,res)=>{
+    const code=req.params.code;
+    try{
+        const googleRes = await oauth2Client.getToken(code);
+        oauth2Client.setCredentials(googleRes.tokens);
+        const userRes = await fetch(`https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${googleRes.tokens.access_token}`,{
+            method:'GET'
+        });
+        const data=await userRes.json();
+        console.log(data);
+        const {id:googleId,email,name}=data;
+        const token=jwt.sign({email:email},secretcode);
+        res.send({status:'ok',token:token});
+        let user=await User.findOne({email:email});
+        if(user){
+            user.GoogleUniqueId=googleId;
+            await user.save();
+        }else{
+            const newuser=await User.create({
+                email:email,
+                GoogleUniqueId:googleId,
+                username:name,
+            });
+        }
+        
+    }catch(e){
+        res.send({status:'error',error:'Network Issues'});
+    }
+})
+
 
 module.exports=router;
 
