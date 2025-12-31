@@ -15,6 +15,8 @@ export default function PlayGroundHeader() {
   const LogoutUser = async () => {
     if (localStorage.getItem("token") != null) localStorage.removeItem("token");
     else sessionStorage.removeItem("token");
+    
+    if(sessionStorage.getItem("code")) sessionStorage.removeItem("code");
 
     Swal.fire({
       title: 'Logout Successfull',
