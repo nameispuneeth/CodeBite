@@ -9,6 +9,7 @@ export default function OtpPage() {
   const DarkMode = theme === "dark";
   const { state } = useLocation();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
   const [value, setValue] = useState(Array(6).fill(""));
   const inputRefs = useRef([]);
   const { purpose } = state;
@@ -16,6 +17,7 @@ export default function OtpPage() {
   const [pwd2, setpwd2] = useState('');
   const [pwderror, setpwderror] = useState(false);
   const [showPwdChange, setShowPwdChange] = useState(false);
+  const [pwdloading,setpwdLoading] = useState(false);
 
 
   const handleChange = (i, val) => {
@@ -29,8 +31,15 @@ export default function OtpPage() {
       }
     }
   };
-  let registerUser=async ()=>{
-    const authtoken=sessionStorage.getItem("token");
+  const MSGSpinner = () => {
+    return (
+        <div className="flex justify-center items-center">
+            <div className="w-6 h-6 border-4 border-blue-700 border-t-blue-400 rounded-full animate-spin"></div>
+        </div>
+    );
+};
+  let registerUser = async () => {
+    const authtoken = sessionStorage.getItem("token");
     const result = await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/auth/registerUser`, {
       method: "GET",
       headers: {
@@ -58,41 +67,69 @@ export default function OtpPage() {
 
   }
   let VerifyOTP = async () => {
+    setLoading(true);
     let currOTP = value.join("");
-    const authtoken=sessionStorage.getItem("authToken");
-    if(!authtoken){
+    if(currOTP.length !== 6) {
       Swal.fire({
-        title:"Session Expired",
-        icon:"error",
+        title: "Invalid OTP",
+        icon: "error",
+        background: `${DarkMode ? '#1e1e1e' : 'white'}`,
+      });
+      setLoading(false);
+      return;
+    }
+    const authtoken = sessionStorage.getItem("authToken");
+    if (!authtoken) {
+      Swal.fire({
+        title: "Session Expired",
+        icon: "error",
         background: `${DarkMode ? '#1e1e1e' : 'white'}`,
       });
       navigate("/login");
       return;
     }
-    const response=await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/auth/verifyotp`,{
-      method:"POST",
-      headers:{
-        'authorization':authtoken,
-        'Content-Type':'application/json'
+    const response = await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/auth/verifyotp`, {
+      method: "POST",
+      headers: {
+        'authorization': authtoken,
+        'Content-Type': 'application/json'
       },
-      body:JSON.stringify({
-        otp:currOTP
+      body: JSON.stringify({
+        otp: currOTP
       })
     })
-    const data=await response.json();
-    if (data.status=="ok") {
-      sessionStorage.setItem("token",data.token);
+    const data = await response.json();
+    setLoading(false);
+
+    if (data.status == "ok") {
+      sessionStorage.setItem("token", data.token);
       if (purpose === "changepwd") {
         setShowPwdChange(true);
       } else {
         registerUser();
       }
     }
-    else alert(data.error);
+    else Swal.fire({title:data.error,icon:"error",background:`${DarkMode ? '#1e1e1e' : 'white'}`});
   };
   const ChangePWD = async () => {
+    if(pwd1=="" || pwd2=="") {
+      Swal.fire({
+        title: "Please enter both passwords",
+        icon: "error",
+        background: `${DarkMode ? '#1e1e1e' : 'white'}`,
+      });
+      return;
+    }
+    if(pwd1 !== pwd2) {
+      Swal.fire({
+        title: "Passwords do not match",
+        icon: "error",
+        background: `${DarkMode ? '#1e1e1e' : 'white'}`,
+      });
+      return;
+    }
     const token = sessionStorage.getItem("token");
-
+    setpwdLoading(true);
     if (pwd1 === pwd2 && token) {
       const response = await fetch(`${process.env.REACT_APP_API_KEY_BACKEND_URL}/api/auth/changepwd`, {
         method: 'POST',
@@ -106,7 +143,7 @@ export default function OtpPage() {
       })
 
       const res = await response.json();
-
+    setpwdLoading(false);
       if (res.status === "ok") {
         navigate("/");
       } else {
@@ -135,6 +172,7 @@ export default function OtpPage() {
                   setpwd1(e.target.value)
                   setpwderror(false);
                 }}
+                required
                 value={pwd1}
                 className={`w-full p-2 border-3 rounded ${DarkMode ? 'border-gray-700 bg-transparent text-gray-400' : 'border-vscode text-black'}`}
               />
@@ -151,6 +189,7 @@ export default function OtpPage() {
                   setpwd2(e.target.value)
                   setpwderror(false);
                 }}
+                required
                 value={pwd2}
                 className={`w-full p-2 border-3 mb-2 rounded ${DarkMode ? 'border-gray-700 bg-transparent text-gray-400' : 'border-vscode text-black'}`}
               />
@@ -162,7 +201,7 @@ export default function OtpPage() {
                 onClick={() => ChangePWD()}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200"
               >
-                Change Password
+                {pwdloading ? MSGSpinner() : "Change Password"}
               </button>
             </div>
           </form>
@@ -192,27 +231,30 @@ export default function OtpPage() {
             type="text"
             maxLength="1"
             value={value[i]}
+            required
             onChange={(e) => handleChange(i, e.target.value)}
             className={`h-16 w-12 sm:h-20 sm:w-16 text-2xl sm:text-3xl border-2 ${DarkMode
-                ? 'bg-gray-600 text-white border-gray-900'
-                : 'bg-gray-300 text-black border-gray-100'
+              ? 'bg-gray-600 text-white border-gray-900'
+              : 'bg-gray-300 text-black border-gray-100'
               } rounded text-center`}
             hidden={showPwdChange}
           />
         ))}
       </div>
       <div>
-        <input
-          type="submit"
-          value="Verify"
+        <button
           className={`mt-10 p-3 w-72 sm:w-96  border-2 font-semibold mb-5 text-white 
-    ${DarkMode
+      ${DarkMode
               ? 'border-blue-700 hover:bg-blue-500 bg-blue-700'
               : 'border-black hover:bg-gray-900 bg-black'
             }`}
           onClick={() => VerifyOTP()}
           hidden={showPwdChange}
-        />
+          disabled={loading}
+        >
+          {loading ? MSGSpinner()
+            : "Verify"}
+        </button>
       </div>
       {showPwdChange && pwdChangeHTML()}
     </div>

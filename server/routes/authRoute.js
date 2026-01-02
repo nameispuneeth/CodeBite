@@ -10,14 +10,18 @@ const jwt=require("jsonwebtoken")
 const {oauth2Client} = require("../utils/googleClient")
 
 
-let transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 465,
-    secure: true,
+const transporter = nodemailer.createTransport({
+    service: "gmail",
     auth: {
         user: process.env.gmail,
         pass: process.env.password
-    }
+    },
+    pool: true,
+    maxConnections: 3,
+    maxMessages: 50,
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 10000
 });
 
 
@@ -35,7 +39,7 @@ router.post('/login', async (req, res) => {
                 res.json({ status: 'ok', token });
             }
             else {
-                if(temp.GoogleUniqueId===null) res.json({ status: 'error', error: 'Invalid Credientials' });
+                if(user.GoogleUniqueId===null) res.json({ status: 'error', error: 'Invalid Credientials' });
                 else res.json({status:'error',error:'Email Registered with Google.Please Login with Google'});
             }
         } else {
@@ -67,30 +71,19 @@ router.post('/register', async (req, res) => {
                 },
                 { upsert: true, new: true }
             );
-            
             const token = jwt.sign({ email: data.email,password: newPassword,name: data.name,}, secretcode ,{expiresIn:'5m'});
-            let mailOptions = {
-                from: `"Codebite IDE" <${process.env.gmail}>`,
-                to: data.email,
-                subject: 'Your Email Verification Code for Register',
-                html: `
-    <div style="font-family: Arial, sans-serif; line-height:1.5;">
-      <h3><b>Hello There,</h3>
-    <h4>Your verification code is:</h4> <h1>${OTP}</h1>
-      <h5>Please use this code within 5 minutes</span>.</h5>
-      <br/>
-      <p>Best regards,<br/><b>Codebite IDE Team</b></p>
-    </div>
-  `
-            };
+            res.send({ status: "ok", authToken: token });
 
-            transporter.sendMail(mailOptions, async (error, info) => {
-                if (error) {
-                    res.send({ status: 'error', error: 'NETWORK ISSUES' })
-                } else {
-                    res.send({ status: 'ok', authToken: token });
-                }
-            });
+        transporter.sendMail({
+            from: `"Codebite IDE" <${process.env.gmail}>`,
+            to: data.email,
+            subject: "Your Verification Code",
+            html: `<h2>Your OTP: ${OTP}</h2><p>Valid for 5 minutes</p>`
+        }).then(() => {
+            OTPModel.updateOne({ email:data.email }, { status: "sent" });
+        }).catch(() => {
+            OTPModel.updateOne({ email:data.email }, { status: "failed" });
+        });
 
         }
     }
@@ -116,29 +109,17 @@ router.post("/sendmailforpwdchange", async (req, res) => {
             upsert: true
         });
         const token = jwt.sign({ email: data.email }, secretcode,{expiresIn:'5m'});
+        res.send({ status: "ok", authToken: token });
 
-        let mailOptions = {
+        transporter.sendMail({
             from: `"Codebite IDE" <${process.env.gmail}>`,
             to: data.email,
-            subject: 'Your Email Verification Code for PassWord Change',
-            html: `
-    <div style="font-family: Arial, sans-serif; line-height:1.5;">
-      <h3><b>Hello There,</h3>
-    <h4>Your verification code is:</h4> <h1>${OTP}</h1>
-      <h5>Please use this code within 5 minutes</span>.</h5>
-      <br/>
-      <p>Best regards,<br/><b>Codebite IDE Team</b></p>
-    </div>
-  `
-        };
-
-        transporter.sendMail(mailOptions, async (error, info) => {
-            if (error) {
-                res.send({ status: 'error', error: 'NETWORK ISSUES' })
-            } else {
-                res.send({ status: 'ok', authToken: token });
-
-            }
+            subject: "Your Verification Code",
+            html: `<h2>Your OTP: ${OTP}</h2><p>Valid for 5 minutes</p>`
+        }).then(() => {
+            OTPModel.updateOne({ email:data.email }, { status: "sent" });
+        }).catch(() => {
+            OTPModel.updateOne({ email:data.email }, { status: "failed" });
         });
     }
     else res.send({ status: 'error', error: 'No Email Exists' });
@@ -176,16 +157,18 @@ router.get("/registerUser", async (req, res) => {
 router.post("/verifyotp",async(req,res)=>{
     const token=req.headers.authorization;
     const OTP=req.body.otp.toString();
-    
     try{
         const decoded=jwt.verify(token,secretcode);
         const userOTP=await OTPModel.findOne({email:decoded.email});
         if(!userOTP) return res.send({status:'error',error:'Server Error'})
+        if(userOTP.status==="failed") return res.send({status:'error',error:'Server Error'});
         if(Date.now()>userOTP.expiry || !OTP || !userOTP) return res.send({status:'error',error:"OTP Expired"});
         const match=await bcrypt.compare(OTP,userOTP.otp);
         const newtoken=jwt.sign({email:decoded.email,name:decoded.name,password:decoded.password},secretcode);
         if(!match) return res.send({status:'error',error:"Verification Failed"});
-        return res.send({status:'ok',token:newtoken}) 
+        res.send({status:'ok',token:newtoken}) 
+        await OTPModel.deleteOne({email:userOTP.email});
+
     }catch(e){
         res.send({status:'error',error:'Session Expired'})
     }
@@ -202,7 +185,6 @@ router.get("/google/:code",async(req,res)=>{
             method:'GET'
         });
         const data=await userRes.json();
-        console.log(data);
         const {id:googleId,email,name}=data;
         const token=jwt.sign({email:email},secretcode);
         res.send({status:'ok',token:token});
