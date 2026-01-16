@@ -24,7 +24,7 @@ router.post("/pushCode", async (req, res) => {
         };
 
         await User.updateOne(
-            { email: req.body.token.email },
+            { email: req.user.email },
             { $push: { codes: newCode } }
         );
 
@@ -38,7 +38,7 @@ router.post("/pushCode", async (req, res) => {
 })
 router.post("/getUserData", async (req, res) => {
     try {
-        const codesData = await User.findOne({ email: req.body.token.email });
+        const codesData = await User.findOne({ email: req.user.email });
         res.send({ status: 'ok', codes: codesData.codes, userName: codesData.name })
 
     } catch {
@@ -50,7 +50,7 @@ router.post("/updateCode", async (req, res) => {
     try {
 
         const result = await User.updateOne(
-            { email: req.body.token.email, "codes._id": new ObjectId(req.body._id) },
+            { email: req.user.email, "codes._id": new ObjectId(req.body._id) },
             {
                 $set: {
                     "codes.$.code": req.body.code,
@@ -72,7 +72,7 @@ router.post("/updateTitle", async (req, res) => {
     try {
 
         const result = await User.updateOne(
-            { email: req.body.token.email, "codes._id": new ObjectId(req.body._id) },
+            { email: req.user.email, "codes._id": new ObjectId(req.body._id) },
             {
                 $set: {
                     "codes.$.name": req.body.title,
@@ -94,7 +94,7 @@ router.post("/deleteData", async (req, res) => {
         const id = req.body._id;
 
         const result = await User.updateOne(
-            { email: req.body.token.email },
+            { email: req.user.email },
             {
                 $pull: {
                     codes: {
@@ -139,10 +139,10 @@ RULES:
 router.post("/changeUserName", async (req, res) => {
     
     try {
-        const updation = await User.updateOne({ email: req.body.token.email }, { $set: { name: req.body.newname } });
+        const updation = await User.updateOne({ email: req.user.email }, { $set: { name: req.body.newname } });
         const newToken = jwt.sign({
             name: req.body.Name,
-            email: req.body.token.email,
+            email: req.user.email,
         }, secretcode);
         res.send({ status: 'ok', token: newToken })
 

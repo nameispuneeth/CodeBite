@@ -7,7 +7,7 @@ const verification=async (req,res,next)=>{
     if(!token) return next();
     try{
         const data = jwt.verify(token, secretcode);
-        req.body.token=data;
+        req.user=data;
         next();
     }
     catch(e){
