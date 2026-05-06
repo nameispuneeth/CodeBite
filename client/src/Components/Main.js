@@ -201,6 +201,7 @@ export default function PlayGround() {
             let result;
             while (status_code === 1 || status_code === 2) {
                 result = await getData();
+                console.log(result);
                 const submission = result?.submissions?.[0];
                 if (!submission) {
                     setoutput("Submission data not available");
